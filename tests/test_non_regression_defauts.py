@@ -1,3 +1,8 @@
+import pytest
+from app.config import settings
+
+
+@pytest.fixture
 def setup_festival_data(client):
     f_res = client.post(
         "/festivals",

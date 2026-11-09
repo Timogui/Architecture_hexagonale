@@ -1,0 +1,1 @@
+"""Adaptateurs sortants (Secondary / Driven)"""

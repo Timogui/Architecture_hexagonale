@@ -1,32 +1,112 @@
-# FestiPlan — dépôt initial (legacy)
+# FestiPlan — Architecture Hexagonale & Domain-Driven Design (DDD)
 
-API pédagogique FastAPI de gestion d'un festival metal fictif. Le dépôt est volontairement imparfait : règles métier dispersées, dépendances techniques accessibles depuis plusieurs couches, et effets secondaires couplés aux opérations métier. Il ne doit pas être utilisé en production.
+API de gestion du festival metal fictif **Hellforge Open Air**. Ce projet a été refactorisé d'une architecture monolithique legacy vers une **Architecture Hexagonale (Ports & Adaptateurs)** respectant les principes du **Domain-Driven Design (DDD)**.
 
-## Fonctionnalités
-- Festivals, artistes, scènes et concerts
-- Consultation du planning, déplacement et annulation de concerts
-- Publication d'un festival et déclaration d'incidents
-- Notifications simulées, avec échec configurable
+---
 
-## Installation (Python 3.11+)
-```bash
+## 🏛️ Architecture du Projet
+
+L'application respecte strictement le principe d'inversion des dépendances : le cœur métier est 100% indépendant de tout framework technique (ni FastAPI, ni SQLAlchemy dans le domaine).
+
+```
+app/
+├── domain/                      # Cœur Métier (Python pur : zéro framework)
+│   ├── entities/                # Festival, Concert, Stage, Artist, Incident
+│   ├── value_objects/           # TimeSlot, DateRange, EquipmentSet
+│   ├── exceptions.py            # Exceptions métier (DomainError, ConcertConflictError...)
+│   └── events.py                # Événements de domaine (ConcertRescheduled...)
+│
+├── application/                 # Orchestration Applicative
+│   ├── ports/                   # Contrats abstraits (Repositories, Notification, UnitOfWork)
+│   ├── use_cases/               # Cas d'utilisation (RescheduleConcert, PublishFestival...)
+│   └── dtos.py                  # Objets de transfert et commandes
+│
+├── adapters/                    # Connecteurs vers les technologies
+│   ├── inbound/api/             # Contrôleurs HTTP FastAPI (Primary Adapters)
+│   └── outbound/                # Adaptateurs secondaires (Driven Adapters)
+│       ├── persistence/         # Repositories SQLAlchemy & UnitOfWork
+│       └── notifications/       # Adaptateur de notification email
+│
+├── dependencies.py              # Composition Root & Injection de dépendances
+├── database.py                  # Configuration SQLite & SQLAlchemy
+├── models.py                    # Schémas de tables SQLAlchemy
+├── schemas.py                   # Schémas de validation Pydantic
+└── main.py                      # Point d'entrée de l'application FastAPI
+```
+
+Pour le détail des choix de conception, des invariants métier (R1 à R10) et les diagrammes UML (Composants et Séquence), consultez la [Note d'Architecture (NOTE_D_ARCHITECTURE.md)](NOTE_D_ARCHITECTURE.md).
+
+---
+
+## ⚙️ Installation & Lancement
+
+### 1. Prérequis
+- Python 3.11 ou supérieur
+- PowerShell (Windows) ou Bash (Linux/macOS)
+
+### 2. Création et activation de l'environnement virtuel
+```powershell
+# Créer l'environnement virtuel
 python -m venv .venv
-# Windows: .venv\Scripts\Activate.ps1 ; macOS/Linux: source .venv/bin/activate
+
+# Activer l'environnement virtuel
+# Sur Windows (PowerShell) :
+.venv\Scripts\Activate.ps1
+# Sur macOS / Linux :
+source .venv/bin/activate
+```
+
+### 3. Installation des dépendances
+```bash
 pip install -r requirements.txt
+```
+
+### 4. Initialisation de la base de données de démonstration
+```bash
 python -m app.seed
+```
+
+### 5. Démarrage de l'API
+```bash
 uvicorn app.main:app --reload
 ```
-Documentation : http://127.0.0.1:8000/docs
-Tests : `pytest`
+L'API est accessible sur `http://127.0.0.1:8000`.
+La documentation interactive Swagger est disponible sur **`http://127.0.0.1:8000/docs`**.
 
-Par défaut, SQLite crée `festiplan.db` dans le dossier courant. Copier `.env.example` vers `.env` si nécessaire.
+---
 
-## Données
-Festival fictif **Hellforge Open Air**, du 18 au 20 juin 2027. Scènes : Mainstage, Warzone, Valley et Temple. Les groupes, horaires et capacités sont inventés ; seule l'ambiance générale est inspirée des festivals metal multi-scènes.
+## 🧪 Exécution des Tests
 
-## Scénarios à explorer
-1. Déplacer un concert sur un créneau occupé sur la même scène : la validation est incomplète dans le parcours de déplacement.
-2. Définir `FESTIPLAN_FAIL_NOTIFICATIONS=true`, déplacer un concert, puis consulter son créneau : l'API peut répondre 500 alors que le déplacement est déjà enregistré.
-3. Publier le festival puis déplacer un concert par l'endpoint ordinaire : le statut publié n'est pas protégé.
+Le projet dispose d'une suite de **29 tests automatisés** couvrant le domaine, les cas d'utilisation, les adaptateurs et la non-régression des 3 défauts initiaux :
 
-Le dépôt contient des tests volontairement sommaires de validation. Les scénarios métier ci-dessus ne sont pas couverts complètement au départ : ils sont à investiguer et à sécuriser pendant la refactorisation.
+```bash
+# Lancer l'ensemble des tests
+pytest -v
+
+# Lancer uniquement les tests unitaires du Domaine (Python pur, ultra rapides)
+pytest tests/domain/ -v
+
+# Lancer les tests des Cas d'Utilisation (avec doubles en mémoire)
+pytest tests/application/ -v
+
+# Lancer les tests de non-régression des 3 défauts initiaux
+pytest tests/test_non_regression_defauts.py -v
+```
+
+---
+
+## 🛠️ Boîte à outils de développement (`_tools/`)
+
+Des scripts d'accélération et de vérification sont mis à disposition dans le dossier `_tools/` :
+
+```powershell
+# 1. Vérification automatique de la pureté de l'architecture hexagonale
+python _tools/check_hexagone.py
+
+# 2. Vérification rapide des 3 défauts majeurs du sujet
+python _tools/check_bugs.py
+
+# 3. Diagnostic succinct des modules et couplages
+python _tools/audit_app.py
+```
+*(Le dossier `_tools/` est ignoré par Git via le `.gitignore` et peut être supprimé sans impact à tout moment avant remise finale).*
