@@ -73,3 +73,8 @@ class EntityNotFoundError(DomainError):
     """Entité demandée introuvable."""
 
     pass
+
+class ConcertCancelledError(DomainError):
+    """R11 : Le concert est annulé et ne peut pas être modifié."""
+
+    pass
