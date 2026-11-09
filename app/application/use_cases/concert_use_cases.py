@@ -24,7 +24,7 @@ from app.domain.exceptions import (
     StageFestivalMismatchError,
 )
 from app.domain.value_objects.time_slot import TimeSlot
-from app.services.scheduling_policy import ensure_no_conflict
+from app.domain.services.scheduling_policy import ensure_no_conflict
 
 
 class RescheduleConcertUseCase:

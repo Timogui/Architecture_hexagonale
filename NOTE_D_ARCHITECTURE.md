@@ -258,7 +258,7 @@ sequenceDiagram
 * **Test de non-régression** : `test_defaut_1_chevauchement_refuse`.
 * **Solution apportée** :
   - Création du Value Object `TimeSlot` vérifiant `overlaps(other)`.
-  - Dans `RescheduleConcertUseCase`, parcours des concerts existants du festival. Si un concert non annulé se chevauche sur la même scène (**R2**) ou pour le même artiste (**R3**), une exception `ConcertConflictError` est levée.
+  - Dans `RescheduleConcertUseCase`: Les règles R2/R3 sont centralisées dans la politique de domaine ensure_no_conflict, qui s’appuie sur Concert.conflict_reason. Elle est appelée par la création et par le déplacement ; la publication réutilise Concert.conflicts_with.
   - L'adaptateur API intercepte cette exception et renvoie un statut `HTTP 400`.
 
 ### Défaut 2 — Échec de notification après modification

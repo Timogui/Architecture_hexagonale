@@ -141,7 +141,7 @@ def test_defaut_3_deplacement_refuse_si_planning_publie(client, setup_festival_d
     assert c_res.status_code == 201
     c_id = c_res.json()["id"]
     pub_res = client.post(f"/festivals/{fest_id}/publish")
-    assert pub_res.status_code == 200
+    assert pub_res.status_code == 200, pub_res.text
     assert pub_res.json()["status"] == "published"
     reschedule_res = client.patch(
         f"/concerts/{c_id}/reschedule",

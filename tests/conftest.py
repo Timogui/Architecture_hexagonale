@@ -6,6 +6,7 @@ import pytest
 _tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
 _tmp.close()
 os.environ["FESTIPLAN_DATABASE_URL"] = f"sqlite:///{_tmp.name}"
+#os.environ["FESTIPLAN_FAIL_NOTIFICATIONS"] = "false"
 from app import models
 from app.database import Base, SessionLocal, engine
 from app.main import app
