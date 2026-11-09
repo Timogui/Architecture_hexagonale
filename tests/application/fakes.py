@@ -44,7 +44,9 @@ class SpyNotificationSender(NotificationPort):
 
     def notify_schedule_change(self, concert_id: int, message: str) -> None:
         if self.should_fail:
-            raise RuntimeError("Simulation : le service de notification est indisponible")
+            raise RuntimeError(
+                "Simulation : le service de notification est indisponible"
+            )
         self.notifications.append((concert_id, message))
 
 
@@ -115,7 +117,8 @@ class InMemoryConcertRepository(ConcertRepositoryPort):
 
     def list_by_festival(self, festival_id: int) -> list[Concert]:
         return [
-            c for c in self.concerts.values()
+            c
+            for c in self.concerts.values()
             if c.festival_id == festival_id and not c.is_cancelled
         ]
 

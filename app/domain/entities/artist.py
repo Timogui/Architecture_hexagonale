@@ -3,6 +3,7 @@ Entité Métier : Artiste.
 """
 
 from dataclasses import dataclass
+
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.equipment import EquipmentSet
 

@@ -4,9 +4,10 @@ Encapsule son créneau horaire (TimeSlot) et ses états de cycle de vie.
 """
 
 from dataclasses import dataclass
-from app.domain.value_objects.time_slot import TimeSlot
+
 from app.domain.events import ConcertRescheduled
 from app.domain.exceptions import ConcertCancelledError
+from app.domain.value_objects.time_slot import TimeSlot
 
 
 @dataclass

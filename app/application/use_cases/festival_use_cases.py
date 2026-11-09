@@ -7,7 +7,10 @@ Cas d'utilisation relatifs aux festivals :
 
 from app.application.dtos import CreateFestivalCommand
 from app.application.ports.notification_port import NotificationPort
-from app.application.ports.repositories import ConcertRepositoryPort, FestivalRepositoryPort
+from app.application.ports.repositories import (
+    ConcertRepositoryPort,
+    FestivalRepositoryPort,
+)
 from app.application.ports.unit_of_work import UnitOfWorkPort
 from app.domain.entities.festival import Festival
 from app.domain.exceptions import EntityNotFoundError

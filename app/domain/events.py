@@ -5,6 +5,7 @@ Représentent les faits métier accomplis.
 
 from dataclasses import dataclass, field
 from datetime import datetime
+
 from app.domain.value_objects.time_slot import TimeSlot
 
 

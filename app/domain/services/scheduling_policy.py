@@ -6,6 +6,7 @@ _MESSAGES = {
     "artist": "Conflit : l'artiste est déjà programmé",
 }
 
+
 def ensure_no_conflict(candidate: Concert, existing: list[Concert]) -> None:
     for other in existing:
         reason = candidate.conflict_reason(other)

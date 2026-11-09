@@ -4,8 +4,12 @@ Délègue aux cas d'utilisation applicatifs.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+
 from app.application.dtos import CreateIncidentCommand
-from app.application.use_cases.incident_use_cases import CreateIncidentUseCase, ListIncidentsUseCase
+from app.application.use_cases.incident_use_cases import (
+    CreateIncidentUseCase,
+    ListIncidentsUseCase,
+)
 from app.dependencies import get_create_incident_use_case, get_list_incidents_use_case
 from app.domain.entities.incident import Incident
 from app.domain.exceptions import DomainError, EntityNotFoundError

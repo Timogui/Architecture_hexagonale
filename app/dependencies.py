@@ -5,7 +5,10 @@ Assemble les adaptateurs techniques pour instancier les cas d'utilisation.
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
-from app.adapters.outbound.notifications.email_notification_adapter import EmailNotificationAdapter
+
+from app.adapters.outbound.notifications.email_notification_adapter import (
+    EmailNotificationAdapter,
+)
 from app.adapters.outbound.persistence.sql_repositories import (
     SqlArtistRepository,
     SqlConcertRepository,
@@ -23,7 +26,10 @@ from app.application.ports.repositories import (
     StageRepositoryPort,
 )
 from app.application.ports.unit_of_work import UnitOfWorkPort
-from app.application.use_cases.artist_use_cases import CreateArtistUseCase, ListArtistsUseCase
+from app.application.use_cases.artist_use_cases import (
+    CreateArtistUseCase,
+    ListArtistsUseCase,
+)
 from app.application.use_cases.concert_use_cases import (
     CancelConcertUseCase,
     CreateConcertUseCase,
@@ -37,8 +43,14 @@ from app.application.use_cases.festival_use_cases import (
     ListFestivalsUseCase,
     PublishFestivalUseCase,
 )
-from app.application.use_cases.incident_use_cases import CreateIncidentUseCase, ListIncidentsUseCase
-from app.application.use_cases.stage_use_cases import CreateStageUseCase, ListStagesUseCase
+from app.application.use_cases.incident_use_cases import (
+    CreateIncidentUseCase,
+    ListIncidentsUseCase,
+)
+from app.application.use_cases.stage_use_cases import (
+    CreateStageUseCase,
+    ListStagesUseCase,
+)
 from app.database import get_db
 
 # --- Fournisseurs d'Adaptateurs ---
@@ -114,7 +126,9 @@ def get_cancel_concert_use_case(
     festival_repo: FestivalRepositoryPort = Depends(get_festival_repository),
     uow: UnitOfWorkPort = Depends(get_uow),
 ) -> CancelConcertUseCase:
-    return CancelConcertUseCase(concert_repo=concert_repo, festival_repo=festival_repo, uow=uow)
+    return CancelConcertUseCase(
+        concert_repo=concert_repo, festival_repo=festival_repo, uow=uow
+    )
 
 
 def get_get_concert_use_case(
@@ -161,7 +175,9 @@ def get_create_stage_use_case(
     festival_repo: FestivalRepositoryPort = Depends(get_festival_repository),
     uow: UnitOfWorkPort = Depends(get_uow),
 ) -> CreateStageUseCase:
-    return CreateStageUseCase(stage_repo=stage_repo, festival_repo=festival_repo, uow=uow)
+    return CreateStageUseCase(
+        stage_repo=stage_repo, festival_repo=festival_repo, uow=uow
+    )
 
 
 def get_list_stages_use_case(
@@ -188,7 +204,9 @@ def get_create_incident_use_case(
     concert_repo: ConcertRepositoryPort = Depends(get_concert_repository),
     uow: UnitOfWorkPort = Depends(get_uow),
 ) -> CreateIncidentUseCase:
-    return CreateIncidentUseCase(incident_repo=incident_repo, concert_repo=concert_repo, uow=uow)
+    return CreateIncidentUseCase(
+        incident_repo=incident_repo, concert_repo=concert_repo, uow=uow
+    )
 
 
 def get_list_incidents_use_case(

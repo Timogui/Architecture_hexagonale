@@ -5,8 +5,12 @@ Cas d'utilisation relatifs aux incidents (R10) :
 """
 
 from datetime import datetime
+
 from app.application.dtos import CreateIncidentCommand
-from app.application.ports.repositories import ConcertRepositoryPort, IncidentRepositoryPort
+from app.application.ports.repositories import (
+    ConcertRepositoryPort,
+    IncidentRepositoryPort,
+)
 from app.application.ports.unit_of_work import UnitOfWorkPort
 from app.domain.entities.incident import Incident
 from app.domain.exceptions import EntityNotFoundError

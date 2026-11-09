@@ -4,7 +4,8 @@ Protège l'invariant R9 (capacité > 0).
 """
 
 from dataclasses import dataclass
-from app.domain.exceptions import StageCapacityError, DomainError
+
+from app.domain.exceptions import DomainError, StageCapacityError
 from app.domain.value_objects.equipment import EquipmentSet
 
 

@@ -4,10 +4,11 @@ Gère son cycle de vie (préparation -> publié) et garantit les invariants R7 &
 """
 
 from dataclasses import dataclass
+
 from app.domain.exceptions import (
+    DomainError,
     FestivalAlreadyPublishedError,
     FestivalCannotBePublishedError,
-    DomainError,
 )
 from app.domain.value_objects.date_range import DateRange
 from app.domain.value_objects.time_slot import TimeSlot

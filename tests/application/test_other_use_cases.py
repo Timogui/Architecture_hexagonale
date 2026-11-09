@@ -2,16 +2,26 @@
 Tests des cas d'utilisation Festival, Stage, Artist et Incident avec doubles en mémoire.
 """
 
-import pytest
 from datetime import datetime
+
+import pytest
 from app.application.dtos import (
     CreateFestivalCommand,
     CreateIncidentCommand,
     CreateStageCommand,
 )
-from app.application.use_cases.festival_use_cases import CreateFestivalUseCase, PublishFestivalUseCase
-from app.application.use_cases.incident_use_cases import CreateIncidentUseCase, ListIncidentsUseCase
-from app.application.use_cases.stage_use_cases import CreateStageUseCase, ListStagesUseCase
+from app.application.use_cases.festival_use_cases import (
+    CreateFestivalUseCase,
+    PublishFestivalUseCase,
+)
+from app.application.use_cases.incident_use_cases import (
+    CreateIncidentUseCase,
+    ListIncidentsUseCase,
+)
+from app.application.use_cases.stage_use_cases import (
+    CreateStageUseCase,
+    ListStagesUseCase,
+)
 from app.domain.entities.concert import Concert
 from app.domain.entities.festival import Festival
 from app.domain.exceptions import EntityNotFoundError, FestivalCannotBePublishedError
@@ -25,6 +35,7 @@ from tests.application.fakes import (
     InMemoryStageRepository,
     SpyNotificationSender,
 )
+
 
 def test_festival_lifecycle():
     f_repo = InMemoryFestivalRepository()
@@ -49,6 +60,7 @@ def test_festival_lifecycle():
     assert pub.status == "published"
     assert len(notif.notifications) == 1
 
+
 def test_stage_creation_and_listing():
     f_repo = InMemoryFestivalRepository()
     s_repo = InMemoryStageRepository()
@@ -58,7 +70,9 @@ def test_stage_creation_and_listing():
         Festival(
             name="Hellfest",
             location="Clisson",
-            period=DateRange(datetime(2027, 6, 18, 10, 0), datetime(2027, 6, 20, 23, 0)),
+            period=DateRange(
+                datetime(2027, 6, 18, 10, 0), datetime(2027, 6, 20, 23, 0)
+            ),
         )
     )
 
@@ -77,6 +91,7 @@ def test_stage_creation_and_listing():
     stages = list_stage_uc.execute(fest.id)
     assert len(stages) == 1
 
+
 def test_incident_creation_and_listing():
     c_repo = InMemoryConcertRepository()
     i_repo = InMemoryIncidentRepository()
@@ -87,7 +102,9 @@ def test_incident_creation_and_listing():
             festival_id=1,
             artist_id=1,
             stage_id=1,
-            time_slot=TimeSlot(datetime(2027, 6, 18, 18, 0), datetime(2027, 6, 18, 19, 0)),
+            time_slot=TimeSlot(
+                datetime(2027, 6, 18, 18, 0), datetime(2027, 6, 18, 19, 0)
+            ),
         )
     )
 
@@ -106,6 +123,7 @@ def test_incident_creation_and_listing():
     assert len(all_inc) == 1
     assert all_inc[0].description == "Pogo trop intense, barrière endommagée"
 
+
 def test_incident_unknown_concert_raises():
     """R10 : Un incident sur un concert inexistant doit échouer."""
     c_repo = InMemoryConcertRepository()
@@ -117,18 +135,40 @@ def test_incident_unknown_concert_raises():
     with pytest.raises(EntityNotFoundError):
         create_uc.execute(cmd)
 
+
 def test_publish_refused_if_conflicts_and_no_notification_sent():
     f_repo = InMemoryFestivalRepository()
     c_repo = InMemoryConcertRepository()
     notif = SpyNotificationSender()
-    fest = f_repo.save(Festival(
-        name="Hellforge", location="Clisson",
-        period=DateRange(datetime(2027, 6, 18, 10, 0), datetime(2027, 6, 20, 23, 0)),
-    ))
-    c_repo.save(Concert(festival_id=fest.id, artist_id=1, stage_id=1,
-        time_slot=TimeSlot(datetime(2027, 6, 18, 14, 0), datetime(2027, 6, 18, 15, 0))))
-    c_repo.save(Concert(festival_id=fest.id, artist_id=2, stage_id=1,
-        time_slot=TimeSlot(datetime(2027, 6, 18, 14, 30), datetime(2027, 6, 18, 15, 30))))
+    fest = f_repo.save(
+        Festival(
+            name="Hellforge",
+            location="Clisson",
+            period=DateRange(
+                datetime(2027, 6, 18, 10, 0), datetime(2027, 6, 20, 23, 0)
+            ),
+        )
+    )
+    c_repo.save(
+        Concert(
+            festival_id=fest.id,
+            artist_id=1,
+            stage_id=1,
+            time_slot=TimeSlot(
+                datetime(2027, 6, 18, 14, 0), datetime(2027, 6, 18, 15, 0)
+            ),
+        )
+    )
+    c_repo.save(
+        Concert(
+            festival_id=fest.id,
+            artist_id=2,
+            stage_id=1,
+            time_slot=TimeSlot(
+                datetime(2027, 6, 18, 14, 30), datetime(2027, 6, 18, 15, 30)
+            ),
+        )
+    )
 
     with pytest.raises(FestivalCannotBePublishedError):
         PublishFestivalUseCase(f_repo, c_repo, notif, FakeUnitOfWork()).execute(fest.id)

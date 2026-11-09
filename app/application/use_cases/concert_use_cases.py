@@ -7,6 +7,7 @@ Cas d'utilisation relatifs aux concerts :
 """
 
 from dataclasses import replace
+
 from app.application.dtos import CreateConcertCommand, RescheduleConcertCommand
 from app.application.ports.notification_port import NotificationPort
 from app.application.ports.repositories import (
@@ -23,8 +24,8 @@ from app.domain.exceptions import (
     StageEquipmentMismatchError,
     StageFestivalMismatchError,
 )
-from app.domain.value_objects.time_slot import TimeSlot
 from app.domain.services.scheduling_policy import ensure_no_conflict
+from app.domain.value_objects.time_slot import TimeSlot
 
 
 class RescheduleConcertUseCase:
@@ -60,7 +61,9 @@ class RescheduleConcertUseCase:
 
         # 3. Vérification que le créneau est inclus dans le festival (R6)
         if not festival.contains_slot(new_slot):
-            raise ConcertOutsideFestivalPeriodError("Le concert doit se dérouler pendant le festival")
+            raise ConcertOutsideFestivalPeriodError(
+                "Le concert doit se dérouler pendant le festival"
+            )
 
         # 4. Contrôle des conflits de programmation (R2 & R3 - Défaut 1)
         candidate = replace(concert, time_slot=new_slot)
@@ -71,7 +74,9 @@ class RescheduleConcertUseCase:
         artist = self.artist_repo.get_by_id(concert.artist_id)
         stage = self.stage_repo.get_by_id(concert.stage_id)
         if artist and stage and not stage.can_host_artist(artist.required_equipment):
-            raise StageEquipmentMismatchError("La scène ne dispose pas de tous les équipements requis")
+            raise StageEquipmentMismatchError(
+                "La scène ne dispose pas de tous les équipements requis"
+            )
 
         event = concert.reschedule(new_slot)
 
@@ -119,8 +124,9 @@ class CreateConcertUseCase:
             raise StageFestivalMismatchError("La scène n'appartient pas à ce festival")
 
         if not festival.contains_slot(slot):
-            raise ConcertOutsideFestivalPeriodError("Le concert doit se dérouler pendant le festival")
-
+            raise ConcertOutsideFestivalPeriodError(
+                "Le concert doit se dérouler pendant le festival"
+            )
 
         concert = Concert(
             festival_id=cmd.festival_id,
@@ -134,7 +140,9 @@ class CreateConcertUseCase:
 
         # Vérification des équipements (R5)
         if not stage.can_host_artist(artist.required_equipment):
-            raise StageEquipmentMismatchError("La scène ne dispose pas de tous les équipements requis")
+            raise StageEquipmentMismatchError(
+                "La scène ne dispose pas de tous les équipements requis"
+            )
 
         with self.uow:
             saved = self.concert_repo.save(concert)

@@ -4,8 +4,12 @@ Délègue aux cas d'utilisation applicatifs.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+
 from app.application.dtos import CreateArtistCommand
-from app.application.use_cases.artist_use_cases import CreateArtistUseCase, ListArtistsUseCase
+from app.application.use_cases.artist_use_cases import (
+    CreateArtistUseCase,
+    ListArtistsUseCase,
+)
 from app.dependencies import get_create_artist_use_case, get_list_artists_use_case
 from app.domain.entities.artist import Artist
 from app.domain.exceptions import DomainError

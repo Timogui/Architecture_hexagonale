@@ -4,8 +4,12 @@ Délègue aux cas d'utilisation applicatifs.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+
 from app.application.dtos import CreateStageCommand
-from app.application.use_cases.stage_use_cases import CreateStageUseCase, ListStagesUseCase
+from app.application.use_cases.stage_use_cases import (
+    CreateStageUseCase,
+    ListStagesUseCase,
+)
 from app.dependencies import get_create_stage_use_case, get_list_stages_use_case
 from app.domain.entities.stage import Stage
 from app.domain.exceptions import DomainError, EntityNotFoundError

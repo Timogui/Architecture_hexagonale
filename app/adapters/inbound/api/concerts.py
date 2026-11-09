@@ -4,6 +4,7 @@ Délègue exclusivement aux cas d'utilisation applicatifs.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+
 from app.application.dtos import CreateConcertCommand, RescheduleConcertCommand
 from app.application.use_cases.concert_use_cases import (
     CancelConcertUseCase,

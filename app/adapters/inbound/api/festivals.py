@@ -4,6 +4,7 @@ Délègue aux cas d'utilisation applicatifs.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+
 from app.application.dtos import CreateFestivalCommand
 from app.application.use_cases.festival_use_cases import (
     CreateFestivalUseCase,

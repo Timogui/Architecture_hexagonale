@@ -4,6 +4,7 @@ Aucune dépendance à FastAPI ni à SQLite.
 """
 
 from datetime import datetime
+
 import pytest
 from app.domain.exceptions import InvalidTimeSlotError
 from app.domain.value_objects.time_slot import TimeSlot

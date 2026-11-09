@@ -5,7 +5,10 @@ Cas d'utilisation relatifs aux scènes :
 """
 
 from app.application.dtos import CreateStageCommand
-from app.application.ports.repositories import FestivalRepositoryPort, StageRepositoryPort
+from app.application.ports.repositories import (
+    FestivalRepositoryPort,
+    StageRepositoryPort,
+)
 from app.application.ports.unit_of_work import UnitOfWorkPort
 from app.domain.entities.stage import Stage
 from app.domain.exceptions import EntityNotFoundError
