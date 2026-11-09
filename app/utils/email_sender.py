@@ -1,5 +1,6 @@
 from app.config import settings
 
+
 def send_email(recipient: str, subject: str, body: str) -> None:
     """Faux expéditeur local : aucun email réel n'est envoyé."""
     if settings.fail_notifications:
