@@ -1,8 +1,6 @@
 from sqlalchemy.orm import Session
-
 from app.models import Festival
 from app.services.notification_service import NotificationService
-
 
 class PublicationService:
     def __init__(self, db: Session):

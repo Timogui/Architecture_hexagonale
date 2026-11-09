@@ -55,7 +55,7 @@ def setup_festival_data(client):
     }
 
 
-def test_defaut_1_(client, setup_festival_data):
+def test_defaut_1_chevauchement_refuse(client, setup_festival_data):
     data = setup_festival_data
     fest_id = data["festival"]["id"]
     stage_id = data["stage"]["id"]

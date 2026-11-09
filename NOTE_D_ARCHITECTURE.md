@@ -14,7 +14,6 @@ L'analyse initiale réalisée sur le projet monolithique de départ a mis en lum
    - Le contrôleur d'incidents exécutait directement des requêtes SQL (`db.query(Incident)`) sans passer par aucun service ni abstraction.
 2. **Couplage technique fort dans les services métier** :
    - Les services (`SchedulingService`, `FestivalService`, `PublicationService`) dépendaient directement de la session SQLAlchemy (`from sqlalchemy.orm import Session`). Il était impossible de tester une règle métier sans démarrer une base de données SQL.
-   - Les services lançaient directement des exceptions FastAPI (`HTTPException`) au lieu d'exceptions métier pures, mélangeant protocole HTTP et logique métier.
 3. **Effets secondaires mal maîtrisés** :
    - Dans `SchedulingService.reschedule_concert`, un `db.commit()` était exécuté **avant** l'appel au service de notification. En cas de panne de notification, l'API levait une erreur `HTTP 500`, mais les données étaient déjà écrites et persistées en base.
 4. **Absence de protection des invariants métier** :
@@ -93,8 +92,27 @@ app/
 * **`EquipmentSet`** : Immuable (`frozenset`). Fournit `is_satisfied_by(available)` pour valider la compatibilité technique scène/artiste (**R5**).
 
 ### 3.3 Événements de Domaine
-* `ConcertRescheduled` : émis lorsqu'un concert est déplacé avec succès.
-* `FestivalPublished` : émis lorsque le festival passe au statut officiel.
+* `ConcertRescheduled` : retourné par `Concert.reschedule()`. Il contient l'ancien et le nouveau créneau.
+  Le cas d'utilisation s'en sert pour construire la notification.
+* `FestivalPublished`, `ConcertCancelled` : définis pour une évolution future, pas encore émis.
+
+| Rôle | Élément |
+| :--- | :--- |
+| Commande | `RescheduleConcertCommand` |
+| Cas d'utilisation | `RescheduleConcertUseCase` |
+| Événement | `ConcertRescheduled` |
+| Mécanisme qui réagit | `NotificationPort` → `EmailNotificationAdapter` |
+
+### 3.4 Agrégats retenus
+* **Festival** : porte sa période et son statut. Garantit les transitions (R7) et la validité à la publication (R6, R8).
+* **Concert** : agrégat séparé, qui référence festival, scène et artiste par identifiant. Il a son propre
+  cycle de vie (programmé / annulé). Charger tous les concerts à chaque modification du festival serait coûteux.
+* **Stage** et **Artist** : agrégats indépendants, référencés par identifiant.
+
+**Compromis** : R2 et R3 concernent plusieurs concerts à la fois. Elles sont portées par une politique de domaine
+(`app/domain/services/scheduling_policy.py`), appelée par les cas d'utilisation de création et de déplacement.
+C'est l'unique point de vérification des conflits. Limite : deux requêtes simultanées pourraient passer
+la vérification (voir section 7).
 
 ---
 
@@ -116,6 +134,7 @@ flowchart TD
     subgraph DomainLayer ["Cœur Métier : Domaine DDD"]
         Entities["Entités Métier\n- Festival (Aggregate Root)\n- Concert\n- Stage\n- Artist\n- Incident"]
         ValueObjects["Objets-Valeurs\n- TimeSlot\n- DateRange\n- EquipmentSet"]
+        Policy["Politique de domaine\n- scheduling_policy"]
         Exceptions["Exceptions Métier\n- ConcertConflictError\n- FestivalAlreadyPublishedError..."]
     end
 
@@ -133,6 +152,8 @@ flowchart TD
     FastAPIControlers -->|Appelle| UseCases
     UseCases -->|Manipule| Entities
     UseCases -->|Valide via| ValueObjects
+    UseCases -->|Vérifie via| Policy
+    Policy -->|Utilise| Entities
     Entities -->|Composé de| ValueObjects
     Entities -.->|Lève| Exceptions
 
@@ -181,6 +202,10 @@ sequenceDiagram
     end
 
     Note over UC: R6 : festival.contains_slot(new_slot)
+    opt Si créneau hors du festival
+        UC-->>API: raise ConcertOutsideFestivalPeriodError
+        API-->>Client: HTTP 400 Bad Request
+    end
     
     UC->>ConcRepo: list_by_festival(festival_id)
     ConcRepo-->>UC: existing_concerts
@@ -191,6 +216,12 @@ sequenceDiagram
         API-->>Client: HTTP 400 Bad Request
     end
 
+    Note over UC: R5 : stage.can_host_artist(artist.required_equipment)
+    opt Si équipement manquant
+        UC-->>API: raise StageEquipmentMismatchError
+        API-->>Client: HTTP 400 Bad Request
+    end
+    
     Note over UC: Application du changement : concert.reschedule(new_slot)
     
     rect rgb(240, 248, 255)
@@ -219,6 +250,12 @@ sequenceDiagram
 
 ### Défaut 1 — Chevauchement de concerts
 * **Cause initiale** : `SchedulingService.reschedule_concert` modifiait directement les dates du concert sans appeler `_check_conflicts`.
+* **Reproduction** : créer deux concerts sur la même scène (18h00–19h00 et 19h30–20h30),
+  puis `PATCH /concerts/{id_2}/reschedule` avec 18h30–19h30.
+* **Observé** : HTTP 200, les deux concerts se chevauchent. **Attendu** : refus (HTTP 400).
+  Le même problème existait pour un artiste sur deux scènes, et pour R5/R6 (équipements, période),
+  qui n'étaient pas non plus vérifiés au déplacement.
+* **Test de non-régression** : `test_defaut_1_chevauchement_refuse`.
 * **Solution apportée** :
   - Création du Value Object `TimeSlot` vérifiant `overlaps(other)`.
   - Dans `RescheduleConcertUseCase`, parcours des concerts existants du festival. Si un concert non annulé se chevauche sur la même scène (**R2**) ou pour le même artiste (**R3**), une exception `ConcertConflictError` est levée.
@@ -226,23 +263,37 @@ sequenceDiagram
 
 ### Défaut 2 — Échec de notification après modification
 * **Cause initiale** : Le code exécutait `db.commit()` avant d'appeler `NotificationService.notify_schedule_change()`. Lorsque la notification échouait, l'API renvoyait 500 alors que les données avaient déjà été enregistrées.
+* **Reproduction** : lancer l'API avec `FESTIPLAN_FAIL_NOTIFICATIONS=true`, déplacer un concert,
+  puis faire `GET /concerts/{id}`.
+* **Observé** : HTTP 500, mais le `GET` montre le nouvel horaire. **Attendu** : l'état de la base
+  correspond à la réponse renvoyée (ici, aucun changement).
+* **Test de non-régression** : `test_defaut_2_echec_notification_ne_doit_pas_persister_changement`.
 * **Solution apportée** :
   - Mise en place du patron **Unit of Work** (`SqlAlchemyUnitOfWork`).
   - L'enregistrement en base et l'envoi de la notification sont encapsulés dans le bloc transactionnel de l'UoW.
   - Si l'envoi de notification échoue, la transaction est annulée (`rollback()`) : la base de données reste dans son état d'origine. Le test de non-régression valide que la date en base n'a pas été altérée.
+* **Décision métier** : un déplacement que la production n'a pas reçu est considéré comme non effectué.
+  On annule donc tout, et la réponse HTTP 500 reflète fidèlement l'état de la base.
+  Alternative écartée : valider la modification et renvoyer 200 avec un avertissement, ou passer par une outbox.
+  Nous l'avons écartée pour rester proportionnés au projet.
 
 ### Défaut 3 — Modification d'un planning publié
 * **Cause initiale** : Aucune vérification du statut du festival n'était opérée lors du déplacement d'un concert.
+* **Reproduction** : créer un concert, `POST /festivals/{id}/publish`, puis `PATCH /concerts/{id}/reschedule`.
+* **Observé** : HTTP 200, le planning officiel est modifié. **Attendu** : refus explicite (HTTP 400).
+* **Test de non-régression** : `test_defaut_3_deplacement_refuse_si_planning_publie`.
 * **Solution apportée** :
   - L'entité `Festival` porte la méthode métier `ensure_can_modify_schedule()`.
   - Si `festival.status == "published"`, une exception `FestivalAlreadyPublishedError` (**R7**) est levée.
   - Le cas d'usage bloque l'opération et l'API renvoie `HTTP 400`.
+* **Règle retenue : refus.** Après publication, le déplacement, la création et l'annulation d'un concert
+  sont refusés (HTTP 400). Aucune procédure de dépublication n'est implémentée (voir limites).
 
 ---
 
 ## 6. Stratégie de Tests (Pyramide de Tests)
 
-Une suite de tests automatisés à plusieurs niveaux a été implémentée (29 tests au total) :
+Une suite de tests automatisés à plusieurs niveaux a été implémentée (46 tests au total) :
 
 1. **Tests unitaires du Domaine (`tests/domain/`)** :
    - Tests de `TimeSlot` : validité, créneaux inversés, durées nulles, calculs de chevauchements.
@@ -262,6 +313,12 @@ Une suite de tests automatisés à plusieurs niveaux a été implémentée (29 t
 
 ## 7. Limites restantes et compromis techniques
 
+* **Concurrence** : la vérification des conflits n'est pas protégée contre deux requêtes simultanées.
+  Il faudrait un verrou ou une contrainte en base.
+* **R5 à la publication** : les équipements sont vérifiés à la création et au déplacement,
+  mais pas de nouveau au moment de la publication.
+* **Pas de procédure de modification post-publication** : une évolution possible serait un cas d'utilisation
+  `UnpublishFestival` avec un statut intermédiaire.
 * **Notifications synchrones vs asynchrones** :
   Dans cette implémentation, la notification est synchrone dans l'unité de travail pour garantir l'atomicité attendue par le test de non-régression initial. Dans une architecture à très haute charge, on pourrait privilégier un patron *Transactional Outbox* avec un broker de messages (RabbitMQ / Kafka) pour ne pas bloquer la transaction métier en cas d'indisponibilité du serveur SMTP.
 * **Isolation multi-festivals** :

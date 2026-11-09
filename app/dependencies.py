@@ -111,9 +111,10 @@ def get_create_concert_use_case(
 
 def get_cancel_concert_use_case(
     concert_repo: ConcertRepositoryPort = Depends(get_concert_repository),
+    festival_repo: FestivalRepositoryPort = Depends(get_festival_repository),
     uow: UnitOfWorkPort = Depends(get_uow),
 ) -> CancelConcertUseCase:
-    return CancelConcertUseCase(concert_repo=concert_repo, uow=uow)
+    return CancelConcertUseCase(concert_repo=concert_repo, festival_repo=festival_repo, uow=uow)
 
 
 def get_get_concert_use_case(

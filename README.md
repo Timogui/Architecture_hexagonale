@@ -77,7 +77,7 @@ La documentation interactive Swagger est disponible sur **`http://127.0.0.1:8000
 
 ## 🧪 Exécution des Tests
 
-Le projet dispose d'une suite de **29 tests automatisés** couvrant le domaine, les cas d'utilisation, les adaptateurs et la non-régression des 3 défauts initiaux :
+Le projet dispose d'une suite de **46 tests automatisés** couvrant le domaine, les cas d'utilisation, les adaptateurs et la non-régression des 3 défauts initiaux :
 
 ```bash
 # Lancer l'ensemble des tests
@@ -94,19 +94,3 @@ pytest tests/test_non_regression_defauts.py -v
 ```
 
 ---
-
-## 🛠️ Boîte à outils de développement (`_tools/`)
-
-Des scripts d'accélération et de vérification sont mis à disposition dans le dossier `_tools/` :
-
-```powershell
-# 1. Vérification automatique de la pureté de l'architecture hexagonale
-python _tools/check_hexagone.py
-
-# 2. Vérification rapide des 3 défauts majeurs du sujet
-python _tools/check_bugs.py
-
-# 3. Diagnostic succinct des modules et couplages
-python _tools/audit_app.py
-```
-*(Le dossier `_tools/` est ignoré par Git via le `.gitignore` et peut être supprimé sans impact à tout moment avant remise finale).*

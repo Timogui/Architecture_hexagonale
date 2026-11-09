@@ -75,6 +75,6 @@ class EntityNotFoundError(DomainError):
     pass
 
 class ConcertCancelledError(DomainError):
-    """R11 : Le concert est annulé et ne peut pas être modifié."""
+    """Un concert annulé ne peut pas être déplacé."""
 
     pass

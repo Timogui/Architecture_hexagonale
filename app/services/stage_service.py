@@ -1,8 +1,6 @@
 from sqlalchemy.orm import Session
-
 from app.models import Festival, Stage
 from app.repositories.stage_repository import StageRepository
-
 
 class StageService:
     def __init__(self, db: Session):

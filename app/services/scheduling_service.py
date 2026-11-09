@@ -1,10 +1,8 @@
 from sqlalchemy.orm import Session
-
 from app.models import Artist, Concert, Festival, Stage
 from app.repositories.concert_repository import ConcertRepository
 from app.services.notification_service import NotificationService
 from app.utils.date_helpers import overlaps
-
 
 class SchedulingService:
     def __init__(self, db: Session):

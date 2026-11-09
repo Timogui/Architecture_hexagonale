@@ -1,8 +1,6 @@
 from sqlalchemy.orm import Session
-
 from app.models import Artist
 from app.repositories.artist_repository import ArtistRepository
-
 
 class ArtistService:
     def __init__(self, db: Session):

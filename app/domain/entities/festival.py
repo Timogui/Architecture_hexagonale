@@ -42,6 +42,11 @@ class Festival:
     def publish(self, concerts: list = None) -> None:
         """Publie le festival après vérification des règles de programmation (R8)."""
         if concerts:
+            for c in concerts:
+                if not self.contains_slot(c.time_slot):
+                    raise FestivalCannotBePublishedError(
+                        f"R8 : Impossible de publier : le concert {c.id} est hors de la période du festival."
+                    )
             # Vérifier qu'aucun concert ne conflite avant publication
             for i, c1 in enumerate(concerts):
                 for c2 in concerts[i + 1 :]:

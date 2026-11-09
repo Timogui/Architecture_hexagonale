@@ -110,6 +110,8 @@ def cancel_concert(
         return concert_to_dto(c)
     except EntityNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
+    except DomainError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 @router.get("/schedule/{festival_id}", response_model=list[ConcertRead])

@@ -2,15 +2,13 @@
 Tests des cas d'utilisation Festival, Stage, Artist et Incident avec doubles en mémoire.
 """
 
-from datetime import datetime
 import pytest
+from datetime import datetime
 from app.application.dtos import (
-    CreateArtistCommand,
     CreateFestivalCommand,
     CreateIncidentCommand,
     CreateStageCommand,
 )
-from app.application.use_cases.artist_use_cases import CreateArtistUseCase, ListArtistsUseCase
 from app.application.use_cases.festival_use_cases import CreateFestivalUseCase, PublishFestivalUseCase
 from app.application.use_cases.incident_use_cases import CreateIncidentUseCase, ListIncidentsUseCase
 from app.application.use_cases.stage_use_cases import CreateStageUseCase, ListStagesUseCase
@@ -21,14 +19,12 @@ from app.domain.value_objects.date_range import DateRange
 from app.domain.value_objects.time_slot import TimeSlot
 from tests.application.fakes import (
     FakeUnitOfWork,
-    InMemoryArtistRepository,
     InMemoryConcertRepository,
     InMemoryFestivalRepository,
     InMemoryIncidentRepository,
     InMemoryStageRepository,
     SpyNotificationSender,
 )
-
 
 def test_festival_lifecycle():
     f_repo = InMemoryFestivalRepository()
@@ -39,7 +35,6 @@ def test_festival_lifecycle():
     create_uc = CreateFestivalUseCase(f_repo, uow)
     publish_uc = PublishFestivalUseCase(f_repo, c_repo, notif, uow)
 
-    # 1. Créer le festival
     cmd = CreateFestivalCommand(
         name="Hellfest Open Air",
         location="Clisson",
@@ -50,11 +45,9 @@ def test_festival_lifecycle():
     assert fest.id is not None
     assert fest.status == "preparation"
 
-    # 2. Publier le festival
     pub = publish_uc.execute(fest.id)
     assert pub.status == "published"
     assert len(notif.notifications) == 1
-
 
 def test_stage_creation_and_listing():
     f_repo = InMemoryFestivalRepository()
@@ -83,7 +76,6 @@ def test_stage_creation_and_listing():
 
     stages = list_stage_uc.execute(fest.id)
     assert len(stages) == 1
-
 
 def test_incident_creation_and_listing():
     c_repo = InMemoryConcertRepository()
@@ -114,7 +106,6 @@ def test_incident_creation_and_listing():
     assert len(all_inc) == 1
     assert all_inc[0].description == "Pogo trop intense, barrière endommagée"
 
-
 def test_incident_unknown_concert_raises():
     """R10 : Un incident sur un concert inexistant doit échouer."""
     c_repo = InMemoryConcertRepository()
@@ -125,3 +116,22 @@ def test_incident_unknown_concert_raises():
     cmd = CreateIncidentCommand(concert_id=999, description="Incident fantôme")
     with pytest.raises(EntityNotFoundError):
         create_uc.execute(cmd)
+
+def test_publish_refused_if_conflicts_and_no_notification_sent():
+    f_repo = InMemoryFestivalRepository()
+    c_repo = InMemoryConcertRepository()
+    notif = SpyNotificationSender()
+    fest = f_repo.save(Festival(
+        name="Hellforge", location="Clisson",
+        period=DateRange(datetime(2027, 6, 18, 10, 0), datetime(2027, 6, 20, 23, 0)),
+    ))
+    c_repo.save(Concert(festival_id=fest.id, artist_id=1, stage_id=1,
+        time_slot=TimeSlot(datetime(2027, 6, 18, 14, 0), datetime(2027, 6, 18, 15, 0))))
+    c_repo.save(Concert(festival_id=fest.id, artist_id=2, stage_id=1,
+        time_slot=TimeSlot(datetime(2027, 6, 18, 14, 30), datetime(2027, 6, 18, 15, 30))))
+
+    with pytest.raises(FestivalCannotBePublishedError):
+        PublishFestivalUseCase(f_repo, c_repo, notif, FakeUnitOfWork()).execute(fest.id)
+
+    assert notif.notifications == []
+    assert f_repo.get_by_id(fest.id).status == "preparation"
