@@ -11,6 +11,7 @@ L'application respecte strictement le principe d'inversion des dépendances : le
 ```
 app/
 ├── domain/                      # Cœur Métier (Python pur : zéro framework)
+│   ├── services/  
 │   ├── entities/                # Festival, Concert, Stage, Artist, Incident
 │   ├── value_objects/           # TimeSlot, DateRange, EquipmentSet
 │   ├── exceptions.py            # Exceptions métier (DomainError, ConcertConflictError...)

@@ -45,6 +45,7 @@ L'architecture a été restructurée selon le principe d'inversion des dépendan
 ```
 app/
 ├── domain/                      # 100% Python pur (zéro import FastAPI, SQLAlchemy, HTTP)
+│   ├── services/                
 │   ├── entities/                # Concert, Festival, Artist, Stage, Incident
 │   ├── value_objects/           # TimeSlot, DateRange, EquipmentSet
 │   ├── exceptions.py            # Exceptions métier pures (InvalidTimeSlotError, ConcertConflictError...)
@@ -132,7 +133,7 @@ flowchart TD
     end
 
     subgraph DomainLayer ["Cœur Métier : Domaine DDD"]
-        Entities["Entités Métier\n- Festival (Aggregate Root)\n- Concert\n- Stage\n- Artist\n- Incident"]
+        Entities["Entités Métier\n- Festival\n- Concert\n- Stage\n- Artist\n- Incident"]
         ValueObjects["Objets-Valeurs\n- TimeSlot\n- DateRange\n- EquipmentSet"]
         Policy["Politique de domaine\n- scheduling_policy"]
         Exceptions["Exceptions Métier\n- ConcertConflictError\n- FestivalAlreadyPublishedError..."]
@@ -304,7 +305,7 @@ Une suite de tests automatisés à plusieurs niveaux a été implémentée (46 t
 2. **Tests des Cas d'Utilisation (`tests/application/`)** :
    - Utilisation de doubles de test (`tests/application/fakes.py`) : `InMemoryConcertRepository`, `InMemoryFestivalRepository`, `SpyNotificationSender`, `FakeUnitOfWork`.
    - Vérification de l'orchestration, des permissions, des conflits et du comportement atomique lors d'une panne de notification.
-3. **Tests d'Intégration & Adaptateurs HTTP (`tests/test_*_api.py`)** :
+3. **Tests d'Intégration & Adaptateurs HTTP (`tests/test_*_api.py, tests/adapters/test_sql_repositories.py`)** :
    - Vérification des réponses HTTP, des codes de statut (201, 200, 400, 404, 422) et de la persistance SQLite via `TestClient`.
 4. **Tests de Non-Régression (`tests/test_non_regression_defauts.py`)** :
    - Vérification explicite que les 3 défauts initiaux sont résolus et ne peuvent plus réapparaître.

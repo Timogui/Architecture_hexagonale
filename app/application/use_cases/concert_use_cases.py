@@ -52,22 +52,22 @@ class RescheduleConcertUseCase:
         if concert is None:
             raise EntityNotFoundError("Concert introuvable")
 
-        # 3. Récupération du festival et contrôle du statut publié (R7 - Défaut 3)
+        # 2. Récupération du festival et contrôle du statut publié (R7 - Défaut 3)
         festival = self.festival_repo.get_by_id(concert.festival_id)
         if festival is None:
             raise EntityNotFoundError("Festival introuvable")
         festival.ensure_can_modify_schedule()
 
-        # 4. Vérification que le créneau est inclus dans le festival (R6)
+        # 3. Vérification que le créneau est inclus dans le festival (R6)
         if not festival.contains_slot(new_slot):
             raise ConcertOutsideFestivalPeriodError("Le concert doit se dérouler pendant le festival")
 
-        # 5. Contrôle des conflits de programmation (R2 & R3 - Défaut 1)
+        # 4. Contrôle des conflits de programmation (R2 & R3 - Défaut 1)
         candidate = replace(concert, time_slot=new_slot)
         existing_concerts = self.concert_repo.list_by_festival(concert.festival_id)
         ensure_no_conflict(candidate, existing_concerts)
 
-        # 6. Contrôle des équipements requis (R5)
+        # 5. Contrôle des équipements requis (R5)
         artist = self.artist_repo.get_by_id(concert.artist_id)
         stage = self.stage_repo.get_by_id(concert.stage_id)
         if artist and stage and not stage.can_host_artist(artist.required_equipment):
@@ -75,7 +75,7 @@ class RescheduleConcertUseCase:
 
         event = concert.reschedule(new_slot)
 
-        # 8. Persistance atomique et notification (Défaut 2)
+        # 6. Persistance atomique et notification (Défaut 2)
         # Si la notification échoue, la transaction est annulée et rien n'est persisté en BD.
         with self.uow:
             saved = self.concert_repo.save(concert)
